@@ -1,0 +1,115 @@
+ SELECT*
+FROM `flash-park-351108.Coviddataset.covid_vaccination`;
+
+SELECT *
+FROM `flash-park-351108.Coviddataset.Coviddeath`;
+
+SELECT Location,Continent,date, total_cases, new_cases, total_deaths, population
+FROM `flash-park-351108.Coviddataset.Coviddeath`
+ORDER BY 1,2;
+
+--- Total cases per continent
+SELECT Continent, SUM(total_cases) as totalcases, sum(total_deaths) as totaldeaths  
+FROM `flash-park-351108.Coviddataset.Coviddeath` 
+Where continent is not null
+GROUP BY Continent;
+
+--- Total cases per continent
+SELECT Location, SUM(total_cases) as totalcases, sum(total_deaths) as totaldeaths  
+FROM `flash-park-351108.Coviddataset.Coviddeath` 
+Where continent is not null
+GROUP BY Location;
+
+--- Total cases versus death cases
+SELECT Location,Continent,date, total_cases, total_deaths, (total_deaths/total_cases)*100 AS Deathpercentage
+FROM `flash-park-351108.Coviddataset.Coviddeath`
+WHERE Location like '%Africa%'
+ORDER BY 1,3;
+
+
+---Total cases versus population
+SELECT Location,date, total_cases, population, (total_cases/population)*100 AS populationpercentage
+FROM `flash-park-351108.Coviddataset.Coviddeath`
+ORDER BY 1,3;
+
+--- Countries with highest infection rate compared to population
+SELECT Location, Continent, max(total_cases) as highestinfectionrate, population, max((total_cases/population))*100 AS populationpercentinfected
+FROM `flash-park-351108.Coviddataset.Coviddeath`
+GROUP BY Location, Population,continent
+ORDER BY populationpercentinfected desc;
+
+---Countries with highest death count per population
+SELECT Location, max(cast(total_deaths as int)) as Totaldeathcount
+FROM `flash-park-351108.Coviddataset.Coviddeath`
+where continent is not null
+GROUP BY Location, Population
+ORDER BY Totaldeathcount desc;
+
+SELECT Location, max(cast(total_deaths as int)) as Totaldeathcount
+FROM `flash-park-351108.Coviddataset.Coviddeath`
+where continent is null
+GROUP BY Location
+ORDER BY Totaldeathcount desc;
+
+--- Continent with the Highest Death Count per Population
+SELECT Continent, max(cast(total_deaths as int)) as Totaldeathcount
+FROM `flash-park-351108.Coviddataset.Coviddeath`
+where continent is not null
+GROUP BY Continent
+ORDER BY Totaldeathcount desc;
+
+---Global Numbers
+SELECT date,SUM(total_cases) AS totalcases, SUM(cast(total_deaths as int)) AS Totaldeath, SUM(cast(total_deaths as int))/SUM(total_cases)*100 AS Deathpercentage
+FROM `flash-park-351108.Coviddataset.Coviddeath`
+GROUP BY date
+ORDER BY 1,2;
+
+--- Join Coviddeaths and Covidvaccinations together
+SELECT *
+FROM `flash-park-351108.Coviddataset.Coviddeath` AS D
+JOIN `flash-park-351108.Coviddataset.covid_vaccination` AS V
+ON D.location = V.location
+AND D.date = V.date;
+
+---Total Vaccination vs Population
+
+SELECT D.location, D.continent,D.date, D.population, V.new_vaccinations, SUM(cast(V.new_vaccinations AS INT)) OVER (PARTITION BY D.location order by d.location, d.date) AS rollinpeoplevaccinated, 
+FROM `flash-park-351108.Coviddataset.Coviddeath` AS D
+JOIN `flash-park-351108.Coviddataset.covid_vaccination` AS V
+ON D.location = V.location
+AND D.date = V.date
+WHERE D.continent is not null
+ORDER BY 2,3;
+
+---Using CTE
+WITH Popsvac
+AS (
+  SELECT D.location, D.continent,D.date, D.population, V.new_vaccinations, SUM(cast(V.new_vaccinations AS INT)) OVER (PARTITION BY D.location order by d.location, d.date) AS rollinpeoplevaccinated
+FROM `flash-park-351108.Coviddataset.Coviddeath` AS D
+JOIN `flash-park-351108.Coviddataset.covid_vaccination` AS V
+ON D.location = V.location
+AND D.date = V.date
+WHERE D.continent is not null)
+
+
+SELECT  *
+FROM Popsvac;
+
+
+Create TEMP table percentpopulation
+(Continent STRING, location STRING,date datetime, population  numeric, new_vaccination numeric, rollinpeoplevaccinated numeric);
+
+INSERT INTO percentpopulation
+SELECT D.location, D.continent,D.date, D.population, V.new_vaccinations, SUM(cast(V.new_vaccinations AS INT)) OVER (PARTITION BY D.location order by d.location, d.date) AS rollinpeoplevaccinated
+FROM `flash-park-351108.Coviddataset.Coviddeath` AS D
+JOIN `flash-park-351108.Coviddataset.covid_vaccination` AS V
+ON D.location = V.location
+AND D.date = V.date
+WHERE D.continent is not null;
+
+SELECT  *, (rollinpeoplevaccinated/population)*100 AS populationpercent
+FROM percentpopulation;
+
+
+
+
