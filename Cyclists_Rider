@@ -1,0 +1,67 @@
+SELECT *
+FROM `flash-park-351108.cyclitic_rider.september_21` 
+UNION ALL 
+SELECT *
+ FROM `flash-park-351108.cyclitic_rider.october_21`
+UNION ALL 
+SELECT *
+ FROM `flash-park-351108.cyclitic_rider.november_21`
+ UNION ALL 
+SELECT *
+ FROM `flash-park-351108.cyclitic_rider.december_21`
+ UNION ALL 
+SELECT *
+ FROM `flash-park-351108.cyclitic_rider.january_22`
+ UNION ALL 
+SELECT *
+ FROM `flash-park-351108.cyclitic_rider.february_21`
+  UNION ALL 
+SELECT *
+ FROM `flash-park-351108.cyclitic_rider.march_22`
+  UNION ALL 
+SELECT *
+ FROM `flash-park-351108.cyclitic_rider.april_22`
+  UNION ALL 
+SELECT *
+ FROM `flash-park-351108.cyclitic_rider.may_22`
+  UNION ALL 
+SELECT *
+ FROM `flash-park-351108.cyclitic_rider.june_22`
+  UNION ALL 
+SELECT *
+ FROM `flash-park-351108.cyclitic_rider.july_22`
+  UNION ALL 
+SELECT *
+ FROM `flash-park-351108.cyclitic_rider.august_22`;
+
+---Extracting dates and cyclistics data 
+
+select ride_id, rideable_type, member_casual, start_station_name, end_station_name,
+EXTRACT (DATE FROM started_at) AS started_date,
+EXTRACT (DATE FROM ended_at) AS ended_date,
+EXTRACT (Time FROM started_at) AS started_time,
+EXTRACT (TIME FROM ended_at) AS ended_time,
+FORMAT_DATE('%A' ,started_at) AS day_of_week,
+FORMAT_DATE('%b', started_at) AS month,
+DATE_DIFF (TIMESTAMP(ended_at), TIMESTAMP(started_at), minute) AS Duration
+FROM `flash-park-351108.cyclitic_rider.Cyclists_rider`
+WHERE start_station_name is not null AND
+      end_station_name is not null
+Order by Duration
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
