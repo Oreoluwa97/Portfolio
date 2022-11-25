@@ -1,3 +1,3 @@
 # Portfolio
-All projects done were carried out using BigQuery.
+All projects done are carried out using BigQuery.
 Data Exploration was done on each project.
