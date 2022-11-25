@@ -1,3 +1,4 @@
+---Joining of cyclistic datasets.
 SELECT *
 FROM `flash-park-351108.cyclitic_rider.september_21` 
 UNION ALL 
