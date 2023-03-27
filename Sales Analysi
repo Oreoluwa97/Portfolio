@@ -1,0 +1,115 @@
+#creating data for my porfolio
+Create database porfolio;
+
+#calling out the database to use
+use Portfolio;
+
+#inspecting the data
+SELECT *
+FROM sales_data_sample;
+
+#Inspecting all the columnns in the table and the datatype for each column
+SHOW Columns FROM sales_data_sample;
+
+#checking unique values
+select distinct status from sales_data_sample;
+select distinct year_id from sales_data_sample;
+select distinct PRODUCTLINE from sales_data_sample;
+select distinct COUNTRY from sales_data_sample;
+select distinct DEALSIZE  from sales_data_sample;
+select distinct TERRITORY from sales_data_sample;
+
+select distinct  MONTH_ID from sales_data_sample
+where year_id = 2020;
+
+#group sales by productline
+select PRODUCTLINE, sum(sales) Revenue
+from sales_data_sample
+group by PRODUCTLINE
+order by 2 desc;
+
+#group by dealsize
+select DEALSIZE, sum(sales) Revenue
+from sales_data_sample
+group by DEALSIZE
+order by 2 desc;
+
+#grouP by country 
+select COUNTRY, sum(sales) Revenue
+from sales_data_sample
+group by COUNTRY 
+order by 2 desc;
+
+#group by year
+select YEAR_ID, sum(sales) Revenue
+from sales_data_sample
+group by YEAR_ID
+order by 2 desc;
+
+#The Best month for sales in a specific year? How much was earned that month? 
+select  MONTH_ID, sum(sales) Revenue, count(ORDERNUMBER) Frequency
+from sales_data_sample
+where YEAR_ID = 2019
+group by  MONTH_ID
+order by 2 desc;
+
+#may seem to be highest sell month in 2005 while november is the highest selling month in 2003 and 2004
+select  MONTH_ID, PRODUCTLINE, sum(sales) Revenue, count(ORDERNUMBER)
+from sales_data_sample
+where YEAR_ID = 2021 and MONTH_ID = 5
+group by  MONTH_ID, PRODUCTLINE
+order by 3 desc;
+
+select  MONTH_ID, PRODUCTLINE, sum(sales) Revenue, count(ORDERNUMBER)
+from sales_data_sample
+where YEAR_ID = 2020 and MONTH_ID = 11
+group by  MONTH_ID, PRODUCTLINE
+order by 3 desc;
+
+select  MONTH_ID, PRODUCTLINE, sum(sales) Revenue, count(ORDERNUMBER)
+from sales_data_sample
+where YEAR_ID = 2019 and MONTH_ID = 11
+group by  MONTH_ID, PRODUCTLINE
+order by 3 desc;
+#there is high income rate anytime a class cars are been sold
+
+#Best customer (this could be best answered with RFM)
+DROP TABLE IF EXISTS rfm_table;
+create table rfm_table as WITH  rfm as 
+(
+	select 
+		CUSTOMERNAME, 
+		sum(sales) MonetaryValue,
+		avg(sales) AvgMonetaryValue,
+		count(ORDERNUMBER) Frequency,
+		max(str_to_date(ORDERDATE, '%m/%d/%Y %t')) last_order_date,
+        (select  max(str_to_date(ORDERDATE, '%m/%d/%Y %t')) 
+        from sales_data_sample) max_order_date,
+         datediff(max(str_to_date(ORDERDATE, '%m/%d/%Y %t')), (select max(str_to_date(ORDERDATE, '%m/%d/%Y %t'))  from sales_data_sample))  AS Recency
+         from sales_data_sample
+	group by CUSTOMERNAME 
+    
+),
+   rfm2 AS (
+select *,
+		NTILE(4) OVER (order by Recency desc) rfm_recency,
+		NTILE(4) OVER (order by Frequency) rfm_frequency,
+		NTILE(4) OVER (order by MonetaryValue) rfm_monetary
+from rfm
+)
+select rfm2.*, rfm_recency+ rfm_frequency+ rfm_monetary as rfm_cell,
+concat(cast(rfm_recency as char),cast(rfm_frequency as char),cast(rfm_monetary as char))rfm_cell_string
+from rfm2;
+
+select CUSTOMERNAME, rfm_recency, rfm_frequency, rfm_monetary, 
+(case 
+		when rfm_cell_string in (111, 112 , 121, 122, 123, 132, 211, 212, 114, 141) then 'lost_customers'  #lost customers
+		when rfm_cell_string in (133, 134, 143, 244, 334, 343, 344, 144) then 'slipping away, cannot lose' # (Big spenders who haven’t purchased lately) slipping away
+		when rfm_cell_string in (311, 411, 331) then 'new customers'
+		when rfm_cell_string in (222, 223, 232, 243, 233, 312, 322) then 'potential churners'
+		when rfm_cell_string in (323, 333,321, 412, 421, 422, 423, 332, 432) then 'active'#(Customers who buy often & recently, but at low price points)
+		when rfm_cell_string in (433, 434, 443, 444) then 'loyal'
+        end) as ref_segment
+from rfm_table;
+select * from rfm_table
+ 
