@@ -1,68 +1,41 @@
----Joining of cyclistic datasets.
-SELECT *
-FROM `flash-park-351108.cyclitic_rider.september_21` 
-UNION ALL 
-SELECT *
- FROM `flash-park-351108.cyclitic_rider.october_21`
-UNION ALL 
-SELECT *
- FROM `flash-park-351108.cyclitic_rider.november_21`
- UNION ALL 
-SELECT *
- FROM `flash-park-351108.cyclitic_rider.december_21`
- UNION ALL 
-SELECT *
- FROM `flash-park-351108.cyclitic_rider.january_22`
- UNION ALL 
-SELECT *
- FROM `flash-park-351108.cyclitic_rider.february_21`
-  UNION ALL 
-SELECT *
- FROM `flash-park-351108.cyclitic_rider.march_22`
-  UNION ALL 
-SELECT *
- FROM `flash-park-351108.cyclitic_rider.april_22`
-  UNION ALL 
-SELECT *
- FROM `flash-park-351108.cyclitic_rider.may_22`
-  UNION ALL 
-SELECT *
- FROM `flash-park-351108.cyclitic_rider.june_22`
-  UNION ALL 
-SELECT *
- FROM `flash-park-351108.cyclitic_rider.july_22`
-  UNION ALL 
-SELECT *
- FROM `flash-park-351108.cyclitic_rider.august_22`;
-
----Extracting dates and cyclistics data 
-
-select ride_id, rideable_type, member_casual, start_station_name, end_station_name,
-EXTRACT (DATE FROM started_at) AS started_date,
-EXTRACT (DATE FROM ended_at) AS ended_date,
-EXTRACT (Time FROM started_at) AS started_time,
-EXTRACT (TIME FROM ended_at) AS ended_time,
-FORMAT_DATE('%A' ,started_at) AS day_of_week,
-FORMAT_DATE('%b', started_at) AS month,
-DATE_DIFF (TIMESTAMP(ended_at), TIMESTAMP(started_at), minute) AS Duration
-FROM `flash-park-351108.cyclitic_rider.Cyclists_rider`
-WHERE start_station_name is not null AND
-      end_station_name is not null
-Order by Duration
+SELECT
+c.usertype,
+c.start_station_name,
+c.end_station_name,
+c.gender,
+EXTRACT(DATE FROM c.starttime) AS Date,
+EXTRACT(YEAR FROM CURRENT_DATE())-C.birth_year AS Age,
+ROUND(CAST(c.tripduration / 60 AS INT64), -1) AS trip_minutes,
+COUNT(c.bikeid) AS trip_count,
+gstart.zip_code As zip_start_code,
+gend.zip_code AS zip_end_code,
+rstart.borough AS borough_start,
+rstart.neighborhood AS neighborhood_start,
+rend.borough AS borough_end,
+rend.neighborhood AS neighborhood_end,
+n.temp AS day_mean_temperature, -- Mean temp
+  n.wdsp AS day_mean_wind_speed, -- Mean wind speed
+  n.prcp As day_precipitation
+From `bigquery-public-data.new_york_citibike.citibike_trips` AS c
+ INNER JOIN bigquery-public-data.geo_us_boundaries.zip_codes AS gstart
+    ON ST_WITHIN(
+    ST_GEOGPOINT(c.start_station_longitude, c.start_station_latitude),
+    gstart.zip_code_geom)
+    INNER JOIN bigquery-public-data.geo_us_boundaries.zip_codes AS gend
+    ON ST_WITHIN(
+    ST_GEOGPOINT(c.start_station_longitude, c.start_station_latitude),
+    gend.zip_code_geom)
+    INNER JOIN flash-park-351108.cyclitic_rider.rider AS rstart
+        ON gstart.zip_code = CAST(rstart.zip AS STRING)
+    INNER JOIN flash-park-351108.cyclitic_rider.rider AS rend
+        ON gstart.zip_code = CAST(rend.zip AS STRING)
+        INNER JOIN`bigquery-public-data.noaa_gsod.gsod20*` AS n
+  ON PARSE_DATE("%Y%m%d", CONCAT(n.year, n.mo, n.da)) = DATE(c.starttime)
+ WHERE  n.wban = '94728'
+ AND EXTRACT(DATE FROM starttime) BETWEEN "2015-01-01" AND "2016-12-31" 
+    GROUP BY 1,2,3,4,5,6,7,9,10,11,12,13,14,15,16,17
+    
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  
